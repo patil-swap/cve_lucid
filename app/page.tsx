@@ -5,7 +5,6 @@ import { useState } from "react";
 import { CVEGrid } from "@/components/CVEGrid";
 import { CVEModal } from "@/components/CVEModal";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function Home() {
   const [page, setPage] = useState(1);
@@ -28,30 +27,36 @@ export default function Home() {
     <main className="min-h-screen p-4 md:p-8 max-w-7xl mx-auto space-y-8">
       <header className="space-y-4">
         <div>
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight">CVE Simplified</h1>
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight">CVE Lucid</h1>
           <p className="text-stone-400 mt-2">Security advisories made readable.</p>
         </div>
 
-        <div className="flex items-center gap-4">
-          <Select
-            value={severityFilter}
-            onValueChange={(val) => {
-              setSeverityFilter(val);
-              setPage(1); // Reset page on filter mutate
-            }}
-          >
-            <SelectTrigger className="w-[180px] bg-[#0e0e16] border-stone-800 text-stone-200">
-              <SelectValue placeholder="Filter by Severity" />
-            </SelectTrigger>
-            <SelectContent className="bg-[#0e0e16] border-stone-800 text-stone-200">
-              <SelectItem value="ALL" className="cursor-pointer hover:bg-stone-800">All Severities</SelectItem>
-              <SelectItem value="CRITICAL" className="cursor-pointer hover:bg-stone-800 text-red-500 font-semibold focus:text-red-500">Critical</SelectItem>
-              <SelectItem value="HIGH" className="cursor-pointer hover:bg-stone-800 text-orange-500 font-semibold focus:text-orange-500">High</SelectItem>
-              <SelectItem value="MEDIUM" className="cursor-pointer hover:bg-stone-800 text-yellow-500 font-semibold focus:text-yellow-500">Medium</SelectItem>
-              <SelectItem value="LOW" className="cursor-pointer hover:bg-stone-800 text-green-500 font-semibold focus:text-green-500">Low</SelectItem>
-              <SelectItem value="UNKNOWN" className="cursor-pointer hover:bg-stone-800 text-gray-500 font-semibold focus:text-gray-500">None</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="flex flex-wrap items-center gap-2">
+          {[
+            { value: "ALL", label: "All", colorClass: "text-stone-200" },
+            { value: "CRITICAL", label: "Critical", colorClass: "text-red-500" },
+            { value: "HIGH", label: "High", colorClass: "text-orange-500" },
+            { value: "MEDIUM", label: "Medium", colorClass: "text-yellow-500" },
+            { value: "LOW", label: "Low", colorClass: "text-green-500" },
+          ].map((filter) => {
+            const isActive = severityFilter === filter.value;
+            return (
+              <Button
+                key={filter.value}
+                variant="outline"
+                className={`rounded-full h-8 px-4 text-xs font-bold tracking-wide transition-all ${isActive
+                    ? `bg-stone-800 border-stone-700 ${filter.colorClass}`
+                    : "bg-[#0e0e16] border-stone-800 text-stone-400 hover:bg-stone-800 hover:text-stone-300"
+                  }`}
+                onClick={() => {
+                  setSeverityFilter(filter.value);
+                  setPage(1);
+                }}
+              >
+                {filter.label}
+              </Button>
+            );
+          })}
         </div>
       </header>
 

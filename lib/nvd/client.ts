@@ -1,17 +1,36 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { CVESummary, CVESeverity } from "@/types/cve";
 
+function getPrimaryMetric(metricList: any[]) {
+  if (!metricList || !metricList.length) return null;
+  // Always prefer Primary (NVD) over Secondary (CNA) to match standard filtering behavior
+  const primary = metricList.find((m: any) => m.type === "Primary");
+  return primary || metricList[0];
+}
+
 function getSeverity(metrics: any): CVESeverity {
-  if (metrics?.cvssMetricV31?.[0]) return metrics.cvssMetricV31[0].cvssData.baseSeverity as CVESeverity;
-  if (metrics?.cvssMetricV30?.[0]) return metrics.cvssMetricV30[0].cvssData.baseSeverity as CVESeverity;
-  if (metrics?.cvssMetricV2?.[0]) return metrics.cvssMetricV2[0].baseSeverity as CVESeverity;
+  const v31 = getPrimaryMetric(metrics?.cvssMetricV31);
+  if (v31) return v31.cvssData.baseSeverity as CVESeverity;
+  
+  const v30 = getPrimaryMetric(metrics?.cvssMetricV30);
+  if (v30) return v30.cvssData.baseSeverity as CVESeverity;
+  
+  const v2 = getPrimaryMetric(metrics?.cvssMetricV2);
+  if (v2) return v2.baseSeverity as CVESeverity;
+  
   return "UNKNOWN";
 }
 
 function getScore(metrics: any): number | null {
-  if (metrics?.cvssMetricV31?.[0]) return metrics.cvssMetricV31[0].cvssData.baseScore;
-  if (metrics?.cvssMetricV30?.[0]) return metrics.cvssMetricV30[0].cvssData.baseScore;
-  if (metrics?.cvssMetricV2?.[0]) return metrics.cvssMetricV2[0].cvssData.baseScore;
+  const v31 = getPrimaryMetric(metrics?.cvssMetricV31);
+  if (v31) return v31.cvssData.baseScore;
+  
+  const v30 = getPrimaryMetric(metrics?.cvssMetricV30);
+  if (v30) return v30.cvssData.baseScore;
+  
+  const v2 = getPrimaryMetric(metrics?.cvssMetricV2);
+  if (v2) return v2.cvssData?.baseScore || null;
+  
   return null;
 }
 
