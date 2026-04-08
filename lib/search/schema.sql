@@ -1,0 +1,39 @@
+CREATE TABLE IF NOT EXISTS cves (
+    id TEXT PRIMARY KEY,
+    description TEXT,
+    cvssScore REAL,
+    severity TEXT,
+    affectedProducts TEXT,
+    cwe TEXT,
+    publishedDate TEXT,
+    lastModifiedDate TEXT,
+    epssScore REAL
+);
+
+-- FTS5 virtual table for full-text search
+CREATE VIRTUAL TABLE IF NOT EXISTS cves_fts USING fts5(
+    id,
+    description,
+    affectedProducts,
+    cwe,
+    content='cves',
+    content_rowid='rowid'
+);
+
+-- Triggers to safely keep the FTS table synchronized with the master cves table
+CREATE TRIGGER IF NOT EXISTS cves_ai AFTER INSERT ON cves BEGIN
+  INSERT INTO cves_fts(rowid, id, description, affectedProducts, cwe) 
+  VALUES (new.rowid, new.id, new.description, new.affectedProducts, new.cwe);
+END;
+
+CREATE TRIGGER IF NOT EXISTS cves_ad AFTER DELETE ON cves BEGIN
+  INSERT INTO cves_fts(cves_fts, rowid, id, description, affectedProducts, cwe) 
+  VALUES('delete', old.rowid, old.id, old.description, old.affectedProducts, old.cwe);
+END;
+
+CREATE TRIGGER IF NOT EXISTS cves_au AFTER UPDATE ON cves BEGIN
+  INSERT INTO cves_fts(cves_fts, rowid, id, description, affectedProducts, cwe) 
+  VALUES('delete', old.rowid, old.id, old.description, old.affectedProducts, old.cwe);
+  INSERT INTO cves_fts(rowid, id, description, affectedProducts, cwe) 
+  VALUES (new.rowid, new.id, new.description, new.affectedProducts, new.cwe);
+END;

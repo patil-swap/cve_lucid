@@ -126,3 +126,40 @@ export async function fetchNvdCVEs(page = 1, resultsPerPage = 20, severity?: str
     cves,
   };
 }
+
+export async function fetchSingleCVE(cveId: string): Promise<CVESummary | null> {
+  const url = `https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=${cveId}`;
+  const headers: HeadersInit = {};
+  if (process.env.NVD_API_KEY) headers["apiKey"] = process.env.NVD_API_KEY;
+  
+  const res = await fetch(url, { headers });
+  if (!res.ok) return null;
+  const data = await res.json();
+  if (!data.vulnerabilities || data.vulnerabilities.length === 0) return null;
+  
+  const item = data.vulnerabilities[0];
+  const cve = item.cve;
+  const description = cve.descriptions?.find((d: any) => d.lang === "en")?.value || "No description available.";
+  
+  const products: string[] = [];
+  if (cve.configurations) {
+      cve.configurations.forEach((conf: any) => {
+          conf.nodes?.forEach((node: any) => {
+              node.cpeMatch?.forEach((match: any) => {
+                  if (match.criteria) products.push(match.criteria.split(":")[4]);
+              });
+          });
+      });
+  }
+
+  return {
+    id: cve.id,
+    description,
+    cvssScore: getScore(cve.metrics),
+    severity: getSeverity(cve.metrics),
+    affectedProducts: Array.from(new Set(products)).slice(0, 3).filter(Boolean),
+    publishedDate: cve.published,
+    lastModifiedDate: cve.lastModified,
+    raw: cve,
+  };
+}

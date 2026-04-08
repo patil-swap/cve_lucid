@@ -10,13 +10,16 @@
   },
   "dependencies": {
     "@tanstack/react-query": "^5.96.2",
+    "better-sqlite3": "^12.8.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.7.0",
     "next": "^16.2.2",
     "radix-ui": "^1.4.3",
     "react": "^18",
+    "react-diff-viewer-continued": "^4.2.0",
     "react-dom": "^18",
+    "recharts": "^3.8.1",
     "shadcn": "^4.1.2",
     "tailwind-merge": "^3.5.0",
     "tailwindcss-animate": "^1.0.7",
@@ -24,6 +27,7 @@
     "zustand": "^5.0.12"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",

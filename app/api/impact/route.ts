@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { rateLimit } from "@/lib/rateLimit";
-import { explainCVE } from "@/lib/ai/explainCVE";
+import { simulateImpact } from "@/lib/ai/impact";
 
 export async function POST(request: Request) {
   const ip = request.headers.get("x-forwarded-for") || "127.0.0.1";
@@ -14,12 +14,6 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { searchParams } = new URL(request.url);
-    const roleParam = searchParams.get("role");
-    
-    // Ensure role parameter matches the specific strict ENUM allowed by Prompts layer
-    const role = (roleParam === "engineer" || roleParam === "manager" || roleParam === "executive") ? roleParam : undefined;
-
     const body = await request.json();
     const { cveId, rawNvdData } = body;
 
@@ -27,11 +21,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing cveId or rawNvdData" }, { status: 400 });
     }
 
-    const explanation = await explainCVE(cveId, rawNvdData, role);
-    return NextResponse.json(explanation);
+    const impact = await simulateImpact(cveId, rawNvdData);
+    return NextResponse.json(impact);
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : String(error);
-    console.error("AI Explanation Error:", msg);
+    console.error("AI Impact Simulation Error:", msg);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

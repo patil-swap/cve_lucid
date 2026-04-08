@@ -25,11 +25,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen p-4 md:p-8 max-w-7xl mx-auto space-y-8">
-      <header className="space-y-4">
-        <div>
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight">CVE Lucid</h1>
-          <p className="text-stone-400 mt-2">Security advisories made readable.</p>
-        </div>
+      <header className="space-y-4 pt-4">
 
         <div className="flex flex-wrap items-center gap-2">
           {[

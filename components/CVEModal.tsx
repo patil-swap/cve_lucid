@@ -3,8 +3,10 @@ import { useModalStore } from "@/store/useModalStore";
 import { SeverityBadge } from "./SeverityBadge";
 import { useQuery } from "@tanstack/react-query";
 import { ExternalLink } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
+import { WhatIfExplainer } from "./WhatIfExplainer";
+import { ImpactSimulation } from "./ImpactSimulation";
 
 function AILoadingSkeleton() {
   return (
@@ -19,6 +21,11 @@ function AILoadingSkeleton() {
 export function CVEModal() {
   const { isOpen, selectedCVE, closeModal } = useModalStore();
   const [showRaw, setShowRaw] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const { data: aiData, isLoading, isError } = useQuery({
     queryKey: ["explain", selectedCVE?.id],
@@ -53,7 +60,7 @@ export function CVEModal() {
               <DialogDescription className="mt-2 text-stone-400 flex items-center gap-2">
                 CVSS: {selectedCVE.cvssScore ?? "N/A"}
                 <span className="text-stone-700">|</span>
-                Pub: {new Date(selectedCVE.publishedDate).toLocaleDateString()}
+                Pub: {mounted ? new Date(selectedCVE.publishedDate).toLocaleDateString() : "--"}
               </DialogDescription>
             </div>
             <a 
@@ -99,10 +106,28 @@ export function CVEModal() {
                 <h4 className="font-semibold text-violet-400 mb-2 uppercase tracking-wider text-xs">How to Fix</h4>
                 <p className="text-stone-300 text-sm leading-relaxed whitespace-pre-line">{aiData.howToFix}</p>
               </section>
+
+              <section className="flex gap-6 p-4 bg-stone-900/30 rounded-md border border-stone-800/60 items-center justify-start mt-2">
+                 <div>
+                    <span className="block text-[10px] text-stone-500 uppercase tracking-widest font-semibold mb-1">Reading Time</span>
+                    <span className="text-sm font-mono text-stone-300">~{aiData.readingTimeMinutes} min</span>
+                 </div>
+                 <div className="border-l border-stone-800 pl-6">
+                    <span className="block text-[10px] text-stone-500 uppercase tracking-widest font-semibold mb-1">Difficulty Content</span>
+                    <span className="text-sm font-mono text-stone-300">{aiData.difficulty}</span>
+                 </div>
+              </section>
+
+              <WhatIfExplainer cve={selectedCVE} />
+              <ImpactSimulation cve={selectedCVE} />
             </>
           ) : null}
 
-          <div className="pt-4 border-t border-stone-800">
+           <div className="pt-4 border-t border-stone-800">
+              <SimilarCVESuggestions cveId={selectedCVE.id} />
+           </div>
+
+           <div className="pt-4 border-t border-stone-800">
              <Button variant="ghost" size="sm" onClick={() => setShowRaw(!showRaw)} className="text-stone-400">
                {showRaw ? "Hide" : "Show"} Raw Data
              </Button>
@@ -117,3 +142,41 @@ export function CVEModal() {
     </Dialog>
   );
 }
+
+function SimilarCVESuggestions({ cveId }: { cveId: string }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ["similar", cveId],
+    queryFn: async () => {
+      const res = await fetch(`/api/similar?cveId=${cveId}`);
+      if (!res.ok) return { similar: [] };
+      return res.json();
+    },
+    enabled: !!cveId,
+  });
+
+  if (isLoading) return <div className="text-stone-500 text-[10px] font-mono animate-pulse">Searching similar vulnerabilities...</div>;
+  if (!data?.similar || data.similar.length === 0) return null;
+
+  return (
+    <div className="space-y-3">
+       <h4 className="font-semibold text-sky-400 uppercase tracking-wider text-[10px]">Structurally Similar CVEs</h4>
+       <div className="grid grid-cols-1 gap-2">
+         {data.similar.map((sim: any) => (
+           <div key={sim.cveId} className="flex items-center justify-between bg-stone-900/40 p-3 rounded border border-stone-800/50 hover:border-sky-500/30 transition-colors group">
+              <div className="flex flex-col overflow-hidden">
+                <span className="text-stone-300 font-mono text-[10px] font-bold">{sim.cveId}</span>
+                <span className="text-stone-500 text-[9px] truncate max-w-[200px]">{sim.reason}</span>
+              </div>
+              <a 
+                href={`/compare?cve1=${cveId}&cve2=${sim.cveId}`}
+                className="text-[9px] bg-sky-500/10 text-sky-400 px-2 py-1 rounded border border-sky-500/20 hover:bg-sky-500/20 transition-all font-mono"
+              >
+                Compare
+              </a>
+           </div>
+         ))}
+       </div>
+    </div>
+  );
+}
+

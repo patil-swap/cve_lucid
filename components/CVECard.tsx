@@ -2,6 +2,7 @@ import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card"
 import { CVESummary } from "@/types/cve";
 import { SeverityBadge } from "./SeverityBadge";
 import { useModalStore } from "@/store/useModalStore";
+import { useState, useEffect } from "react";
 
 function truncate(str: string, max: number) {
   return str.length > max ? str.substring(0, max - 3) + "..." : str;
@@ -9,6 +10,11 @@ function truncate(str: string, max: number) {
 
 export function CVECard({ cve }: { cve: CVESummary }) {
   const { openModal } = useModalStore();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const severityColorMap: Record<string, string> = {
     CRITICAL: "border-l-red-500",
@@ -46,7 +52,7 @@ export function CVECard({ cve }: { cve: CVESummary }) {
       </CardContent>
 
       <CardFooter className="pt-2 text-xs text-stone-500 flex justify-between">
-        <span>Pub: {new Date(cve.publishedDate).toLocaleDateString()}</span>
+        <span>Pub: {mounted ? new Date(cve.publishedDate).toLocaleDateString() : "--"}</span>
       </CardFooter>
     </Card>
   );
