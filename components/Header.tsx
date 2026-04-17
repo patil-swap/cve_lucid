@@ -27,13 +27,11 @@ export function Header() {
             </nav>
           </div>
 
-          <div className="flex-1 flex justify-center max-w-md">
-            <SearchBar />
-          </div>
+          <div className="flex-1"></div>
 
           <div className="hidden md:flex items-center gap-4">
-            <div className="text-[10px] font-mono text-stone-500 bg-stone-900 px-2 py-1 rounded border border-stone-800">
-               V2.0 STABLE
+            <div className="text-[10px] font-mono text-sky-500 bg-sky-500/10 px-2 py-1 rounded border border-sky-500/20">
+               V3.0 RELEASE-CANDIDATE
             </div>
           </div>
         </div>

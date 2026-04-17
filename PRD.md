@@ -1,5 +1,5 @@
 # CVE Simplified — Product Requirements Document
-Version 2.0 | Status: Final | Author: AI-assisted, reviewed by Swapnil Patil
+Version 3.0 | Status: Final | Author: AI-assisted, reviewed by Swapnil Patil
 
 ---
 
@@ -8,6 +8,8 @@ Version 2.0 | Status: Final | Author: AI-assisted, reviewed by Swapnil Patil
 Security advisories are written by engineers, for engineers. The average CVE entry reads like a legal brief written in assembly. "CVE Simplified" bridges that gap — a web app that pulls live vulnerability data from NIST NVD and makes it readable for humans, while providing enough technical depth that practitioners still find it useful.
 
 **V2 expands this vision:** Security teams don't just need to understand individual CVEs — they need to compare vulnerabilities, understand their business impact, track trends over time, and quickly assess what matters to their specific role.
+
+**V3** introduces a side‑by‑side workflow that lets security teams browse and inspect CVEs without interrupting context.
 
 ---
 
@@ -27,6 +29,12 @@ Security advisories are written by engineers, for engineers. The average CVE ent
 - Surface reading time and difficulty level for each CVE
 - Visualize vulnerability trends over time (dashboard view)
 - Generate role-contextualized "What If" explanations (engineer vs. manager vs. executive)
+
+### V3 Goals
+- **Replace modal with persistent split‑pane (master‑detail) layout** – list on the left, detail on the right, no pop‑ups.
+- **Deep‑linkable selections** – URL updates with selected CVE, back/forward works.
+- **Mobile‑optimized navigation** – separate detail page on small screens.
+- **Preserve all V2 functionality** – compare, search, dashboard, impact simulation remain unchanged.
 
 ### Non-Goals
 - User accounts or saved CVEs
@@ -102,88 +110,103 @@ Security advisories are written by engineers, for engineers. The average CVE ent
 
 ## 6. Feature Specifications
 
-### 6.1 Landing Page — CVE Grid
+### 6.1 Landing Page — Split-Pane Master-Detail (V3 Core)
 
 Route: /
 
-Layout: Responsive card grid (1 col mobile, 2 col tablet, 3-4 col desktop)
-Dark-mode-first. Background: #0a0a0f. Card surface: #111118.
+**Desktop & tablet (≥768px):** Two vertical panes, no modal.
 
-Each card displays:
-- CVE ID (monospace font, e.g., CVE-2024-12345)
-- Severity badge: Low / Medium / High / Critical
-- CVSS score (numeric, large)
-- Affected product/vendor (from NVD `cpeName` or `descriptions`)
-- One-line plain English summary (AI-generated)
-- Published date
+| Pane | Width | Background | Content |
+|------|-------|------------|---------|
+| Left (Master) | 380px (desktop), 320px (tablet) | `#0a0a0f` | Scrollable CVE list, header (search/filter), pagination |
+| Right (Detail) | flex-grow | `#05050a` | Full CVE detail for selected CVE, scrollable |
 
-Color coding (border-left accent + badge):
-- Critical (CVSS 9.0–10.0): #ef4444 (red-500)
-- High (CVSS 7.0–8.9):      #f97316 (orange-500)
-- Medium (CVSS 4.0–6.9):    #eab308 (yellow-500)
-- Low (CVSS 0.1–3.9):       #22c55e (green-500)
-- None / Unknown:            #6b7280 (gray-500)
-
-Pagination: Load 20 CVEs per page. Use NVD API `startIndex` and `resultsPerPage`.
-
-Loading state: Skeleton cards (shimmer animation) while TanStack Query fetches.
-
-Error state: Inline error component with retry button. Do not crash the page.
-
-### 6.2 Detail Modal (V1, with V2 additions)
-
-Trigger: Click any CVE card.
-Component: shadcn/ui `<Dialog>` — full-screen overlay on mobile, centered modal (max-w-2xl) on desktop.
-
-Modal Sections:
-
-Header
-- CVE ID + severity badge
-- CVSS score breakdown (Attack Vector, Complexity, Privileges Required, etc.)
-- Published / Last Modified dates
-- NVD reference link (opens in new tab, rel="noopener noreferrer")
-
-Section 1 — The Technical Reality
-- 2-sentence summary of the actual vulnerability mechanism
-- Source: AI-generated from raw NVD description
-- Audience: Security engineer
-
-Section 2 — The Plain English Version
-- Non-technical explanation: what this bug does, what an attacker can achieve
-- No jargon. "An attacker can read your files without a password" level clarity
-- Audience: PM, executive, developer not in security
-
-Section 3 — The Analogy
-- One punchy creative analogy
-- Examples: "Like a valet key that also opens the vault", "Like a hotel door that unlocks if you knock in a specific pattern"
-- Must be contextually accurate — not just generic
-- Source: AI-generated
-
-Section 4 — How to Fix
-- Patch version if available from NVD
-- If no patch: mitigation steps (disable feature, restrict network access, etc.)
-- Source: NVD references + AI synthesis
-
-Section 5 — Raw NVD Data (collapsible)
-- Full JSON-formatted NVD entry for practitioners who want it
-- Hidden by default. Toggle with a "Show raw data" button.
-
-Section 6 — Reading Time & Difficulty (new)
-Displayed below "How to Fix" section, before raw data:
-
+**When no CVE selected:** Right pane shows placeholder:
 ```
-Reading time: 3 minutes
-Difficulty: Intermediate
-
-[Tooltip]: Beginner = Basic concepts, Intermediate = Needs some security knowledge, Expert = Deep technical details
+Select a CVE from the list to view details.
+→ Use the list on the left to browse vulnerabilities.
 ```
 
-**Difficulty rubric:**
-- **Beginner:** High-level impact only, no technical jargon, analogy-focused
-- **Intermediate:** Includes attack vectors, basic exploitation mechanics
-- **Expert:** References specific CWEs, code patterns, complex attack chains
+#### Left Pane (Master) Details
 
-**Reading time calculation:** Based on total word count of technicalReality + plainEnglish + howToFix (150 words/minute average).
+- **Sticky header:** Search bar (keyboard shortcut `/`), filter button (opens drawer), “Compare” link (goes to `/compare`).
+- **CVE cards** (same content as V2 card):
+  - CVE ID (monospace font, e.g., CVE-2024-12345)
+  - Severity badge (colored pill -  Low / Medium / High / Critical)
+  - CVSS score (numeric, large)
+  - Affected product/vendor (from NVD `cpeName` or `descriptions`)
+  - One-line plain English summary (AI-generated)
+  - Published date
+- **Active card:** Background #14141f, left border accent width `4px` (others `2px`), scrolls into view when selected via URL.
+- **Hover:** Background #111118, scale `0.98`.
+- **Pagination:** 20 per page (NVD `startIndex`). Previous/Next + page numbers.
+- **Loading:** Skeleton cards (shimmer animation) while TanStack Query fetches.
+- **Error:** Inline error component with retry button. Do not crash the page.
+
+- Color coding (border-left accent + badge):
+  - Critical (CVSS 9.0–10.0): #ef4444 (red-500)
+  - High (CVSS 7.0–8.9):      #f97316 (orange-500)
+  - Medium (CVSS 4.0–6.9):    #eab308 (yellow-500)
+  - Low (CVSS 0.1–3.9):       #22c55e (green-500)
+  - None / Unknown:            #6b7280 (gray-500)
+
+#### Right Pane (Detail) – replaces modal from V1/V2
+
+- **Sticky header** (background #05050a with blur):
+  - CVE ID + severity badge
+  - CVSS score (tooltip with vector breakdown)
+  - Published / Last Modified dates
+  - External links: NVD, CISA KEV (if applicable)
+  - Action buttons: **Compare** (navigates to `/compare?cve1=...`), **Simulate Impact** (opens drawer), **Share** (copies URL with `?cve=`)
+- **Body sections** (identical to V2 modal content, but inline):
+  1. Technical Reality
+  - 2-sentence summary of the actual vulnerability mechanism
+  - Source: AI-generated from raw NVD description
+  - Audience: Security engineer
+  2. Plain English Version
+  - Non-technical explanation: what this bug does, what an attacker can achieve
+  - No jargon. "An attacker can read your files without a password" level clarity
+  - Audience: PM, executive, developer not in security
+  3. Analogy
+  - One punchy creative analogy
+  - Examples: "Like a valet key that also opens the vault", "Like a hotel door that unlocks if you knock in a specific pattern"
+  - Must be contextually accurate — not just generic
+  - Source: AI-generated
+  4. How to Fix
+  - Patch version if available from NVD
+  - If no patch: mitigation steps (disable feature, restrict network access, etc.)
+  - Source: NVD references + AI synthesis
+  5. Reading Time & Difficulty (badge + tooltip)
+  Displayed below "How to Fix" section, before raw data:
+  ```
+  Reading time: 3 minutes
+  Difficulty: Intermediate
+  [Tooltip]: Beginner = Basic concepts, Intermediate = Needs some security knowledge, Expert = Deep technical details
+  ```
+  **Difficulty rubric:**
+  - **Beginner:** High-level impact only, no technical jargon, analogy-focused
+  - **Intermediate:** Includes attack vectors, basic exploitation mechanics
+  - **Expert:** References specific CWEs, code patterns, complex attack chains
+  **Reading time calculation:** Based on total word count of technicalReality + plainEnglish + howToFix (150 words/minute average).
+  6. **“What If” Explainer** (tabs: Engineer, Manager, Executive) – content changes per role
+  - Details provided in Section 6.4
+  7. **Similar CVEs** (horizontal scroll of up to 3 cards, each with a “Compare” button)
+  8. Raw NVD Data (collapsible `<details>`)
+  - Full JSON-formatted NVD entry for practitioners who want it
+  - Hidden by default. Toggle with a "Show raw data" button.
+- **Impact Simulation Drawer:** Slides from right when “Simulate Impact” clicked – shows confidentiality/integrity/availability, blast radius, attack chain, etc. (same as V2).
+- **Loading:** Skeleton shimmer matching sections.
+- **Error:** Friendly message with retry or “select another CVE”.
+
+### 6.2 Mobile Behavior (<768px)
+
+Split‑pane not feasible. Instead:
+
+- **Default view:** Left pane only (full width). Right pane hidden.
+- Clicking a CVE card **navigates** to a separate detail page: `/cve/CVE-2024-12345`.
+- Detail page shows all right‑pane content (same sections) in a scrollable full‑page view.
+- **Back button** (`← Back to list`) at top returns to the list, preserving scroll position.
+- No modal, no split‑pane.
 
 ### 6.3 AI Explanation Function
 
@@ -431,6 +454,14 @@ Step 5: Lateral movement to database server via stolen creds
 **API endpoint:** `POST /api/impact` with body `{ cveId: string }` returns simulation object.
 
 **Caching:** Per CVE, TTL 7 days (impact doesn't change frequently).
+
+### 6.9 URL & Routing (Deep Linking)
+
+- **Base route:** `/` – left pane shows latest CVEs, right pane placeholder.
+- **Selected CVE:** URL updates to `/?cve=CVE-2024-12345` (query parameter).
+- On load with `?cve=`, right pane fetches that CVE, highlights the card in left pane, and scrolls it into view.
+- **Browser back/forward:** Update both panes without page reload (using `window.history` and TanStack Query).
+- **Compare button** in right pane: navigates to `/compare?cve1=CVE-2024-12345` (second CVE selected via compare page UI).
 
 ---
 
@@ -697,6 +728,8 @@ Cache warming: Pre-compute dashboard aggregates
 - TTL: 7 days
 - Storage: In-memory Map (V1) → Redis (V2)
 
+The left pane list continues to use 5‑minute cache for NVD data.
+
 ---
 
 ## 11. Environment Variables
@@ -727,7 +760,10 @@ NEVER prefix any of these with NEXT_PUBLIC_. They are server-side only.
 
 cve-simplified/
 ├── app/
-│   ├── page.tsx                      # Landing page (CVE grid)
+│   ├── page.tsx                      # Split-pane landing page (master + detail)
+│   ├── cve/
+│   │   └── [cveId]/
+│   │       └── page.tsx              # Mobile detail page (full-screen)
 │   ├── layout.tsx                    # Root layout, metadata, CSP headers
 │   ├── compare/
 │   │   ├── [cve1]/[cve2]/
@@ -749,18 +785,24 @@ cve-simplified/
 │       └── cron/
 │           └── index-cves/route.ts   # POST /api/cron/index-cves — Daily search index refresh
 ├── components/
-│   ├── CVEGrid.tsx                   # Card grid, pagination
-│   ├── CVECard.tsx                   # Individual card
-│   ├── CVEModal.tsx                  # Detail modal (includes reading time + difficulty)
+│   ├── MasterPane/
+│   │   ├── CVECard.tsx
+│   │   ├── CVECardList.tsx
+│   │   └── MasterHeader.tsx
+│   ├── DetailPane/
+│   │   ├── CVEDetail.tsx
+│   │   ├── CVEDetailHeader.tsx
+│   │   ├── WhatIfExplainer.tsx
+│   │   ├── RoleSelector.tsx              # Engineer/Manager/Executive pill buttons
+│   │   ├── ImpactSimulationDrawer.tsx
+│   │   ├── SimilarCVEs.tsx
+│   │   └── RawDataCollapsible.tsx
 │   ├── SeverityBadge.tsx             # Color-coded severity pill
 │   ├── SkeletonCard.tsx              # Loading state
 │   ├── CompareView.tsx               # Side-by-side comparison view
 │   ├── DiffHighlighter.tsx           # Visual diff component
 │   ├── SearchFilters.tsx             # Advanced filter drawer
 │   ├── SearchBar.tsx                 # Global search bar with autocomplete
-│   ├── ImpactSimulation.tsx          # Impact simulation drawer/modal
-│   ├── WhatIfExplainer.tsx           # Role-based "What If" explainer
-│   ├── RoleSelector.tsx              # Engineer/Manager/Executive pill buttons
 │   └── Dashboard/
 │       ├── VelocityChart.tsx         # 30-day CVE velocity line chart
 │       ├── TopVendorsBar.tsx         # Top 10 vendors horizontal bar chart
@@ -799,6 +841,7 @@ cve-simplified/
 │   ├── useCompare.ts                 # TanStack Query hook for CVE comparison
 │   ├── useSearch.ts                  # TanStack Query hook for search
 │   ├── useDashboard.ts               # TanStack Query hook for dashboard stats
+│   ├── useSelectedCVE.ts             # Manages ?cve= query param
 │   └── useImpact.ts                  # TanStack Query hook for impact simulation
 ├── types/
 │   ├── cve.ts                        # Shared CVE types (CVESummary, CVEDetail, etc.)
@@ -816,7 +859,7 @@ cve-simplified/
 
 ---
 
-## 13. UI Design Spec (V2 additions)
+## 13. UI Design Spec (V3 Additions)
 
 Theme: Dark mode only (no toggle in V1). Security terminal meets modern SaaS.
 
@@ -868,6 +911,15 @@ Animations:
 - Dashboard widget entrance: Staggered fade-up
 - Compare page diff highlight: Pulsing yellow then fade to normal (1.5s)
 - Role switch: Cross-fade animation (150ms)
+
+### Layout (V3)
+
+- **Desktop/tablet:** Two panes side‑by‑side. Left pane has a fixed width, right pane fills the rest. No modal overlay.
+- **Active card:** Left border accent width `4px` (instead of `2px`), background `#14141f`. Smooth transition on background and border.
+- **Right pane transitions:** Fade‑in content when a new CVE is selected (150ms). Sticky header with blur effect.
+- **Mobile:** Full‑page detail view with back button; no split‑pane.
+- **Responsive breakpoint:** `768px` – below that, split‑pane disabled, mobile behavior activates.
+- **All other styling** (colors, typography, animations) unchanged from V2.
 
 ---
 
@@ -976,5 +1028,20 @@ After generating explanations, calculate:
 | Difficulty | Reasonable classification (test on 50 CVEs, 90% accuracy) |
 | Performance | Lighthouse score ≥ 90 on desktop and mobile for all new pages |
 | Backward compatibility | V1 features unchanged, no regressions |
+
+### V3 new acceptance criteria
+
+| Feature | Pass Criteria |
+|---------|----------------|
+| Split‑pane layout (desktop) | Left pane (list) and right pane (detail) visible side‑by‑side, no modal |
+| Click CVE card | Right pane updates with detail content, URL changes to `/?cve=CVE-xxx`, left pane highlights selected card |
+| URL deep linking | Loading `/?cve=CVE-xxx` shows correct detail in right pane and highlights the card |
+| Browser back/forward | Updates both panes correctly, no full reload |
+| Mobile (<768px) | Left pane fills screen; clicking card navigates to separate detail page with back button |
+| Right pane content | All sections (Technical, Plain, Analogy, Fix, Reading Time, What If, Similar CVEs, Raw Data) render correctly |
+| Impact simulation | Drawer opens from right pane, shows simulation data |
+| Compare button | Navigates to `/compare?cve1=...` with current CVE pre‑filled |
+| Performance | Right pane loads detail in <500ms (cache helps); left pane pagination smooth |
+| No regressions | Compare, search, dashboard, impact simulation work as before (V2 features intact) |
 
 ---

@@ -27,8 +27,9 @@ export async function POST(request: Request) {
     
     const insert = db.prepare(`
       INSERT OR REPLACE INTO cves (
-        id, description, cvssScore, severity, affectedProducts, cwe, publishedDate, lastModifiedDate
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        id, description, cvssScore, severity, affectedProducts, cwe, publishedDate, lastModifiedDate,
+        exploitExists, patchAvailable, isZeroDay, patchDate
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     let count = 0;
@@ -62,7 +63,27 @@ export async function POST(request: Request) {
         // Extract CWE
         const cwe = cve.weaknesses?.[0]?.description?.[0]?.value || '';
 
-        insert.run(id, description, score, severity, affectedProducts, cwe, cve.published, cve.lastModified);
+        // V3 Logic: Parse references for Patch/Exploit tags
+        const refs = cve.references || [];
+        const hasPatch = refs.some((r: any) => r.tags?.includes('Patch') || r.tags?.includes('Vendor Advisory'));
+        const hasExploit = refs.some((r: any) => r.tags?.includes('Exploit'));
+        const isZeroDay = !hasPatch ? 1 : 0;
+        const patchDate = hasPatch ? (cve.lastModified || cve.published) : null;
+
+        insert.run(
+            id, 
+            description, 
+            score, 
+            severity, 
+            affectedProducts, 
+            cwe, 
+            cve.published, 
+            cve.lastModified,
+            hasExploit ? 1 : 0,
+            hasPatch ? 1 : 0,
+            isZeroDay,
+            patchDate
+        );
         count++;
       }
     });

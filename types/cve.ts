@@ -8,6 +8,10 @@ export interface CVESummary {
   affectedProducts: string[];
   publishedDate: string;
   lastModifiedDate: string;
+  exploitExists?: number;
+  patchAvailable?: number;
+  isZeroDay?: number;
+  patchDate?: string;
   raw?: any;
 }
 
@@ -24,3 +28,12 @@ export interface CVEApiResponse {
   perPage: number;
   cves: CVESummary[];
 }
+
+export const severityColorMap: Record<CVESeverity, string> = {
+  CRITICAL: "border-l-red-500",
+  HIGH: "border-l-orange-500",
+  MEDIUM: "border-l-yellow-500",
+  LOW: "border-l-green-500",
+  NONE: "border-l-stone-500",
+  UNKNOWN: "border-l-stone-800",
+};

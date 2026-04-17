@@ -24,6 +24,8 @@ export function SearchBar() {
     e.preventDefault();
     if (query.trim()) {
       router.push(`/search?q=${encodeURIComponent(query)}`);
+    } else {
+      router.push("/");
     }
   };
 
@@ -37,7 +39,7 @@ export function SearchBar() {
         type="text"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search CVEs, products... (Press /)"
+        placeholder="Search (e.g. log4j, CVE-2021-44228, Windows) /"
         className="block w-full pl-10 pr-12 py-2 bg-stone-900/50 border border-stone-800 rounded-md text-sm text-stone-300 placeholder-stone-500 focus:outline-none focus:ring-1 focus:ring-sky-500 focus:border-sky-500 transition-all font-mono"
       />
       <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">

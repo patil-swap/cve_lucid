@@ -7,7 +7,11 @@ CREATE TABLE IF NOT EXISTS cves (
     cwe TEXT,
     publishedDate TEXT,
     lastModifiedDate TEXT,
-    epssScore REAL
+    epssScore REAL,
+    exploitExists INTEGER DEFAULT 0,
+    patchAvailable INTEGER DEFAULT 0,
+    isZeroDay INTEGER DEFAULT 0,
+    patchDate TEXT
 );
 
 -- FTS5 virtual table for full-text search

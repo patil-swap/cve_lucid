@@ -36,7 +36,7 @@ export async function GET(request: Request) {
         query += ' WHERE ' + whereClauses.join(' AND ');
      }
 
-     query += ' ORDER BY f.rank LIMIT ? OFFSET ?';
+     query += ' ORDER BY c.publishedDate DESC LIMIT ? OFFSET ?';
      params.push(limit, offset);
 
      const results = db.prepare(query).all(...params);

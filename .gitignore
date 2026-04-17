@@ -39,3 +39,6 @@ next-env.d.ts
 *.sqlite
 *.sqlite-shm
 *.sqlite-wal
+
+# screens
+/screens

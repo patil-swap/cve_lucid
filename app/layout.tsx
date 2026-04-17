@@ -1,10 +1,15 @@
 import type { Metadata } from "next";
-import { Inter, Space_Mono } from "next/font/google";
+import { Oswald, Space_Mono } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/Providers";
 import { Header } from "@/components/Header";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
+const oswald = Oswald({ 
+  subsets: ["latin"], 
+  variable: "--font-oswald",
+  weight: ["200", "300", "400", "500", "600", "700"]
+});
+
 const spaceMono = Space_Mono({ weight: ["400", "700"], subsets: ["latin"], variable: "--font-mono" });
 
 export const metadata: Metadata = {
@@ -18,8 +23,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
-      <body className={`${inter.variable} ${spaceMono.variable} font-sans antialiased bg-[#05050a] text-stone-100`}>
+    <html lang="en" className={`${oswald.variable} ${spaceMono.variable} dark`}>
+      <body className="font-sans antialiased bg-[#05050a] text-stone-100 font-[400]">
         <Providers>
           <Header />
           {children}
