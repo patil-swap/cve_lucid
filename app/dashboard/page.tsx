@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { 
     AreaChart, Area,
@@ -13,6 +14,12 @@ import {
   const COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#6366f1'];
   
   export default function Dashboard() {
+    const [mounted, setMounted] = useState(false);
+    
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
     const { data, isLoading, isError } = useQuery({
       queryKey: ["dashboard-stats"],
       queryFn: async () => {
@@ -71,8 +78,9 @@ import {
                 <Zap className="w-4 h-4 text-yellow-500" />
                 30-Day CVE Velocity
              </h3>
-             <div className="h-[300px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
+             <div className="h-[300px] w-full min-h-[300px]">
+                {mounted ? (
+                   <ResponsiveContainer width="100%" height="100%">
                    <LineChart data={data.velocity}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#262626" vertical={false} />
                       <XAxis dataKey="date" stroke="#525252" fontSize={10} tickFormatter={(val) => val.split('-').slice(1).join('/')} />
@@ -87,6 +95,9 @@ import {
                       <Line type="monotone" dataKey="medium" stroke="#eab308" strokeWidth={2} dot={false} />
                    </LineChart>
                 </ResponsiveContainer>
+                ) : (
+                  <div className="w-full h-full bg-stone-900/20 animate-pulse rounded-md" />
+                )}
              </div>
           </section>
   
@@ -124,8 +135,9 @@ import {
                 <ShieldAlert className="w-4 h-4 text-sky-500" />
                 Top Affected Ecosystems
              </h3>
-             <div className="h-[300px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
+             <div className="h-[300px] w-full min-h-[300px]">
+                {mounted ? (
+                   <ResponsiveContainer width="100%" height="100%">
                    <BarChart data={data.topVendors} layout="vertical">
                       <XAxis type="number" hide />
                       <YAxis dataKey="vendor" type="category" stroke="#525252" fontSize={10} width={80} />
@@ -135,6 +147,9 @@ import {
                       <Bar dataKey="count" fill="#38bdf8" radius={[0, 4, 4, 0]} />
                    </BarChart>
                 </ResponsiveContainer>
+                ) : (
+                  <div className="w-full h-full bg-stone-900/20 animate-pulse rounded-md" />
+                )}
              </div>
           </section>
   
@@ -144,54 +159,62 @@ import {
                  <Activity className="w-4 h-4 text-red-500" />
                  Exploit Availability Trend (90-Day)
               </h3>
-              <div className="h-[300px] w-full">
-                 <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={data.exploitTrend}>
-                       <defs>
-                          <linearGradient id="colorExploit" x1="0" y1="0" x2="0" y2="1">
-                             <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8}/>
-                             <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
-                          </linearGradient>
-                       </defs>
-                       <CartesianGrid strokeDasharray="3 3" stroke="#262626" vertical={false} />
-                       <XAxis dataKey="date" stroke="#525252" fontSize={10} tickFormatter={(val) => val.split('-').slice(1).join('/')} />
-                       <YAxis stroke="#525252" fontSize={10} />
-                       <Tooltip 
-                          contentStyle={{ backgroundColor: '#0e0e16', border: '1px solid #262626', fontSize: '12px' }}
-                       />
-                       <Area type="monotone" dataKey="publicExploit" stackId="1" stroke="#ef4444" fillOpacity={1} fill="url(#colorExploit)" />
-                       <Area type="monotone" dataKey="noExploit" stackId="1" stroke="#374151" fill="#1f2937" />
-                    </AreaChart>
-                 </ResponsiveContainer>
+              <div className="h-[300px] w-full min-h-[300px]">
+                 {mounted ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                       <AreaChart data={data.exploitTrend}>
+                          <defs>
+                             <linearGradient id="colorExploit" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8}/>
+                                <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                             </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#262626" vertical={false} />
+                          <XAxis dataKey="date" stroke="#525252" fontSize={10} tickFormatter={(val) => val.split('-').slice(1).join('/')} />
+                          <YAxis stroke="#525252" fontSize={10} />
+                          <Tooltip 
+                             contentStyle={{ backgroundColor: '#0e0e16', border: '1px solid #262626', fontSize: '12px' }}
+                          />
+                          <Area type="monotone" dataKey="publicExploit" stackId="1" stroke="#ef4444" fillOpacity={1} fill="url(#colorExploit)" />
+                          <Area type="monotone" dataKey="noExploit" stackId="1" stroke="#374151" fill="#1f2937" />
+                       </AreaChart>
+                    </ResponsiveContainer>
+                 ) : (
+                    <div className="w-full h-full bg-stone-900/20 animate-pulse rounded-md" />
+                 )}
               </div>
           </section>
   
           {/* Pie Chart (CWE) */}
           <section className="bg-[#0e0e16] border border-stone-800 rounded-xl p-6 shadow-xl min-w-0 flex flex-col">
              <h3 className="text-stone-300 font-semibold mb-6">CWE Framework Distribution</h3>
-             <div className="h-[250px] w-full flex-grow">
-                <ResponsiveContainer width="100%" height="100%">
-                   <PieChart>
-                      <Pie
-                        data={data.cweDistribution}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={80}
-                        paddingAngle={5}
-                        dataKey="count"
-                        nameKey="cwe"
-                      >
-                        {data.cweDistribution?.map((entry: any, index: number) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip 
-                        contentStyle={{ backgroundColor: '#0e0e16', border: '1px solid #262626', fontSize: '12px' }}
-                      />
-                      <Legend wrapperStyle={{ fontSize: '10px' }} />
-                   </PieChart>
-                </ResponsiveContainer>
+             <div className="h-[250px] w-full flex-grow min-h-[250px]">
+                {mounted ? (
+                   <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                         <Pie
+                           data={data.cweDistribution}
+                           cx="50%"
+                           cy="50%"
+                           innerRadius={60}
+                           outerRadius={80}
+                           paddingAngle={5}
+                           dataKey="count"
+                           nameKey="cwe"
+                         >
+                           {data.cweDistribution?.map((entry: any, index: number) => (
+                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                           ))}
+                         </Pie>
+                         <Tooltip 
+                           contentStyle={{ backgroundColor: '#0e0e16', border: '1px solid #262626', fontSize: '12px' }}
+                         />
+                         <Legend wrapperStyle={{ fontSize: '10px' }} />
+                      </PieChart>
+                   </ResponsiveContainer>
+                ) : (
+                   <div className="w-full h-full bg-stone-900/20 animate-pulse rounded-md" />
+                )}
              </div>
           </section>
   

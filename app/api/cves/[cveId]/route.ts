@@ -7,6 +7,10 @@ export async function GET(
   { params }: { params: Promise<{ cveId: string }> }
 ) {
   const { cveId } = await params;
+  
+  if (!/^CVE-\d{4}-\d{4,}$/.test(cveId)) {
+    return NextResponse.json({ error: "Invalid CVE ID format" }, { status: 400 });
+  }
 
   try {
     // 1. Try local index first

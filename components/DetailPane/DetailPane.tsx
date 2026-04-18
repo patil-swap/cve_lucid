@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { CVESummary } from "@/types/cve";
 import { DetailHeader } from "./DetailHeader";
+import { SimilarCVEs } from "./SimilarCVEs";
 import { WhatIfExplainer } from "../WhatIfExplainer";
 import { ImpactSimulation } from "../ImpactSimulation";
 import { Button } from "../ui/button";
@@ -166,7 +167,10 @@ export function DetailPane({ selectedCVE }: DetailPaneProps) {
             )}
           </div>
 
-          {/* Similar CVEs (Horizontal Scroll would go here, for now using existing component) */}
+          {/* Similar CVEs (Horizontal Scroll) */}
+          <div className="pt-10 border-t border-stone-800/30">
+            <SimilarCVEs cveId={selectedCVE.id} />
+          </div>
 
           {/* Raw Data Toggle */}
           <div className="pt-10">

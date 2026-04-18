@@ -163,3 +163,6 @@ export async function fetchSingleCVE(cveId: string): Promise<CVESummary | null> 
     raw: cve,
   };
 }
+export function clearNvdCache() {
+  totalResultsCache.clear();
+}
