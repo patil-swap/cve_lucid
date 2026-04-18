@@ -2,6 +2,43 @@
 import { generateUserPrompt, SYSTEM_PROMPT, generateWhatIfPrompt } from "./prompts/templates";
 import { getCache, setCache } from "@/lib/cache";
 
+function cleanJson(raw: string): string {
+    // 1. First, strip any markdown code block markers
+    let cleaned = raw.replace(/```(?:json)?\s*([\s\S]*?)\s*```/g, '$1').trim();
+
+    // 2. If it's valid JSON now, great
+    try {
+        JSON.parse(cleaned);
+        return cleaned;
+    } catch {
+        // Continue to more aggressive methods
+    }
+
+    // 3. Try to find the LAST occurrence of a JSON block (often where the final answer is)
+    // We look for a block that starts with { and ends with }
+    const lastOpenBrace = cleaned.lastIndexOf('{');
+    const lastCloseBrace = cleaned.lastIndexOf('}');
+    
+    if (lastOpenBrace !== -1 && lastCloseBrace !== -1 && lastCloseBrace > lastOpenBrace) {
+        const candidate = cleaned.substring(lastOpenBrace, lastCloseBrace + 1);
+        try {
+            JSON.parse(candidate);
+            return candidate;
+        } catch {
+            // Fall back to first occurrence
+        }
+    }
+
+    // 4. Try to find the FIRST occurrence
+    const firstOpenBrace = cleaned.indexOf('{');
+    const firstCloseBrace = cleaned.lastIndexOf('}');
+    if (firstOpenBrace !== -1 && firstCloseBrace !== -1 && firstCloseBrace > firstOpenBrace) {
+        return cleaned.substring(firstOpenBrace, firstCloseBrace + 1);
+    }
+
+    return cleaned;
+}
+
 function extractNvdContext(rawData: any) {
     // If rawData has a 'cve' property, use it. Otherwise, assume rawData IS the cve object.
     const cve = rawData?.cve || rawData;
@@ -122,13 +159,17 @@ export async function explainCVE(cveId: string, rawData: any, role?: "engineer" 
     }
 
     try {
-        const parsed = JSON.parse(finalRawJson);
+        const cleaned = cleanJson(finalRawJson);
+        const parsed = JSON.parse(cleaned);
 
         // Fallback defaults for missing fields if JSON is weird
         if (role) {
-            if (!parsed.impactText) throw new Error("Missing impactText in role generation");
-            await setCache(cacheKey, JSON.stringify(parsed), 86400);
-            return parsed;
+            const impactResult = parsed.impactText || parsed.impact || parsed.text || parsed.explanation;
+            if (!impactResult) throw new Error("Missing impactText in role generation");
+            
+            const normalized = { impactText: impactResult };
+            await setCache(cacheKey, JSON.stringify(normalized), 86400);
+            return normalized;
         }
 
         const finalResult = {

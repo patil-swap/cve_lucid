@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { DetailPane } from '@/components/DetailPane/DetailPane';
 import { CVESummary } from '@/types/cve';
@@ -64,6 +64,13 @@ describe('DetailPane Component', () => {
     // Check AI-fetched fields (Wait for them to appear)
     await waitFor(() => {
       expect(screen.getByText('Real technical details.')).toBeInTheDocument();
+    });
+
+    // Tier 3 sections are collapsed by default. Need to expand them.
+    const analogyToggle = screen.getByText('The Analogy');
+    fireEvent.click(analogyToggle);
+
+    await waitFor(() => {
       expect(screen.getByText('\"Like a broken door.\"')).toBeInTheDocument();
     });
   });

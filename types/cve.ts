@@ -1,11 +1,19 @@
 export type CVESeverity = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | "NONE" | "UNKNOWN";
 
+export interface VersionRange {
+  product: string;
+  versionStart: string | null;
+  versionEnd: string | null;
+  versionEndExcluding: boolean;
+}
+
 export interface CVESummary {
   id: string;
   description: string;
   cvssScore: number | null;
   severity: CVESeverity;
   affectedProducts: string[];
+  affectedVersionRanges?: VersionRange[];
   publishedDate: string;
   lastModifiedDate: string;
   exploitExists?: number;

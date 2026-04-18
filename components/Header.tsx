@@ -12,7 +12,7 @@ export function Header() {
           <div className="flex items-center gap-8">
             <Link href="/" className="flex items-center gap-2 group">
               <div className="w-8 h-8 bg-sky-500 rounded flex items-center justify-center font-bold text-black transform group-hover:rotate-12 transition-transform">L</div>
-              <span className="text-xl font-bold tracking-tight hidden sm:block">CVE Lucid</span>
+              <span className="text-xl font-bold tracking-tight">CVE Lucid</span>
             </Link>
             
             <nav className="hidden md:flex items-center gap-6">

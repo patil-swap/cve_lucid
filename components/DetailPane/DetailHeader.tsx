@@ -1,5 +1,6 @@
 "use client";
 
+import { AlertPopover } from "./AlertPopover";
 import { CVESummary } from "@/types/cve";
 import { SeverityBadge } from "../SeverityBadge";
 import { ExternalLink, Share2, GitCompare, ShieldAlert, Zap, CheckCircle2 } from "lucide-react";
@@ -49,6 +50,8 @@ export function DetailHeader({ cve }: DetailHeaderProps) {
       </div>
 
       <div className="flex items-center gap-2">
+         <AlertPopover defaultProduct={cve.affectedProducts[0] || null} />
+
          <Button 
            variant="ghost" 
            size="sm" 

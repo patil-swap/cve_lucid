@@ -55,7 +55,7 @@ function CompareContent() {
          {error && <div className="text-red-400 bg-red-500/10 p-4 rounded border border-red-500/20">{error}</div>}
 
          {data && (
-            <div className="space-y-8 animate-in fade-in zoom-in-95 duration-300">
+            <div className="max-w-2xl mx-auto space-y-8 animate-in fade-in zoom-in-95 duration-300">
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                  <div className="bg-[#0e0e16] p-6 rounded-lg border border-stone-800 space-y-4">
                     <h2 className="text-2xl font-mono flex items-center gap-3 text-stone-200">

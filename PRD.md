@@ -34,16 +34,18 @@ Security advisories are written by engineers, for engineers. The average CVE ent
 - **Replace modal with persistent split‑pane (master‑detail) layout** – list on the left, detail on the right, no pop‑ups.
 - **Deep‑linkable selections** – URL updates with selected CVE, back/forward works.
 - **Mobile‑optimized navigation** – separate detail page on small screens.
+- **"Am I Affected?" Version Checker** – Client-side tool to check local versions against NVD version ranges.
+- **Email Alerts & Daily Digests** – Double-opt-in subscription system for targeted vulnerability notifications.
+- **Tiered Visual Hierarchy** – Structured detail view optimized for scannability (Primary, Secondary, Tertiary information).
 - **Preserve all V2 functionality** – compare, search, dashboard, impact simulation remain unchanged.
 
 ### Non-Goals
-- User accounts or saved CVEs
-- Push notifications or alerting
+- User accounts or saved CVEs (subscriptions are email-only)
+- Push notifications (email only)
 - Mobile app (responsive web only)
 - Paid tiers or rate-limit bypasses
 
-### V2 Non-Goals
-- Real-time alerts or email digests (deferred to V3)
+### V3 Non-Goals
 - Community features (comments, voting) - explicitly excluded
 - Personal watchlists or saved searches
 - Conversational chat interface
@@ -157,7 +159,22 @@ Select a CVE from the list to view details.
   - CVSS score (tooltip with vector breakdown)
   - Published / Last Modified dates
   - External links: NVD, CISA KEV (if applicable)
-  - Action buttons: **Compare** (navigates to `/compare?cve1=...`), **Simulate Impact** (opens drawer), **Share** (copies URL with `?cve=`)
+  - Action buttons: 
+    **Alert Me** (opens subscription popover), 
+    **Compare** (navigates to `/compare?cve1=...`), 
+    **Simulate Impact** (opens drawer), 
+    **Share** (copies URL with `?cve=`)
+- **Tiered Visual Hierarchy (V3 Design):**
+  - **Tier 1 (High Contrast):** Technical Reality & How to Fix (persistent 2px severity-colored border).
+  - **Tier 2 (Interactive):** Plain English, What If Explainer, Version Checker, Similar CVEs.
+  - **Tier 3 (Collapsible):** Analogy, Metadata & Effort, Raw Data (hidden by default).
+- **"Am I Affected?" Version Checker (V3):**
+  - Input: User-provided version string (e.g. "2.4.51").
+  - Logic: Uses `semver` to compare against NVD `versionStart` and `versionEnd` ranges.
+  - Feedback: "Likely Affected" (Red) or "Not Affected" (Green) badge with explanation.
+- **Impact Simulation Drawer:** Slides from right when “Simulate Impact” clicked – shows confidentiality/integrity/availability, blast radius, attack chain, etc. (same as V2).
+- **Loading:** Skeleton shimmer matching sections.
+- **Error:** Friendly message with retry or “select another CVE”.
 - **Body sections** (identical to V2 modal content, but inline):
   1. Technical Reality
   - 2-sentence summary of the actual vulnerability mechanism
@@ -194,9 +211,6 @@ Select a CVE from the list to view details.
   8. Raw NVD Data (collapsible `<details>`)
   - Full JSON-formatted NVD entry for practitioners who want it
   - Hidden by default. Toggle with a "Show raw data" button.
-- **Impact Simulation Drawer:** Slides from right when “Simulate Impact” clicked – shows confidentiality/integrity/availability, blast radius, attack chain, etc. (same as V2).
-- **Loading:** Skeleton shimmer matching sections.
-- **Error:** Friendly message with retry or “select another CVE”.
 
 ### 6.2 Mobile Behavior (<768px)
 
@@ -462,6 +476,16 @@ Step 5: Lateral movement to database server via stolen creds
 - On load with `?cve=`, right pane fetches that CVE, highlights the card in left pane, and scrolls it into view.
 - **Browser back/forward:** Update both panes without page reload (using `window.history` and TanStack Query).
 - **Compare button** in right pane: navigates to `/compare?cve1=CVE-2024-12345` (second CVE selected via compare page UI).
+
+### 6.10 Email Alerts & Daily Digests (V3)
+- **Subscription Flow**: Double-opt-in via email.
+- **User Preference**: Filter by Product and Minimum Severity (CRITICAL, HIGH, MEDIUM, ALL).
+- **Backend**:
+  - `alert_subscriptions` SQLite table for tracking confirmed users and tokens.
+  - Transactional emails via **Resend**.
+  - Rate limiting (500 emails/day) to prevent bill shock.
+- **Cron Job**: Daily execution at 00:00 UTC fetches matching CVEs from the last 24h and sends digests.
+- **Security**: Token-based unsubscription (one-click) included in every footer.
 
 ---
 
@@ -783,7 +807,17 @@ cve-simplified/
 │       ├── dashboard/
 │       │   └── stats/route.ts        # GET /api/dashboard/stats — Dashboard aggregates
 │       └── cron/
-│           └── index-cves/route.ts   # POST /api/cron/index-cves — Daily search index refresh
+│           ├── index-cves/route.ts   # Daily search index refresh
+│           └── send-alerts/route.ts  # Daily email alert job (rate-limited)
+├── lib/
+│   ├── alerts/
+│   │   └── subscriptions.ts          # Alert DB helpers (CRUD)
+│   ├── email/
+│   │   ├── sender.ts                 # Resend integration
+│   │   └── templates.ts              # HTML email templates
+│   ├── nvd/
+│   │   ├── client.ts                 # NVD API fetch + normalization
+│   │   └── types.ts                  # NVD response types
 ├── components/
 │   ├── MasterPane/
 │   │   ├── CVECard.tsx

@@ -1,11 +1,7 @@
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { CVESummary } from "@/types/cve";
-import { Button } from "./ui/button";
 
 export function ImpactSimulation({ cve }: { cve: CVESummary }) {
-  const [isOpen, setIsOpen] = useState(false);
-
   const { data, isLoading, isError } = useQuery({
     queryKey: ["impact", cve.id],
     queryFn: async () => {
@@ -17,22 +13,12 @@ export function ImpactSimulation({ cve }: { cve: CVESummary }) {
       if (!res.ok) throw new Error("Failed LLM simulation");
       return res.json();
     },
-    enabled: isOpen,
   });
 
-  if (!isOpen) {
-    return (
-      <Button variant="outline" className="w-full bg-[#0e0e16] border-stone-800 text-stone-400 mt-4" onClick={() => setIsOpen(true)}>
-         Simulate Impact in Environment
-      </Button>
-    );
-  }
-
   return (
-    <div className="bg-[#05050a] p-4 rounded-lg border border-stone-800 space-y-4 mt-6">
+    <div id="impact-simulation" className="bg-[#05050a] p-4 rounded-lg border border-stone-800 space-y-4">
       <div className="flex justify-between items-center mb-2 border-b border-stone-800 pb-2">
-        <h4 className="font-semibold text-rose-400 uppercase tracking-wider text-xs">Simulated Environment Architecture Impact</h4>
-        <Button variant="ghost" size="sm" onClick={() => setIsOpen(false)} className="h-6 text-xs text-stone-500 hover:text-stone-300 hover:bg-stone-900 p-0 px-2 rounded">Hide</Button>
+        <h4 className="font-semibold text-rose-400 uppercase tracking-wider text-xs">Simulated Architecture Impact</h4>
       </div>
 
       <div className="text-stone-300 text-sm leading-relaxed min-h-[80px]">

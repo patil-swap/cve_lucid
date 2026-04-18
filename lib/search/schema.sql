@@ -41,3 +41,15 @@ CREATE TRIGGER IF NOT EXISTS cves_au AFTER UPDATE ON cves BEGIN
   INSERT INTO cves_fts(rowid, id, description, affectedProducts, cwe) 
   VALUES (new.rowid, new.id, new.description, new.affectedProducts, new.cwe);
 END;
+
+-- Part B: Email Alerts Infrastructure
+CREATE TABLE IF NOT EXISTS alert_subscriptions (
+    id TEXT PRIMARY KEY,
+    email TEXT NOT NULL,
+    product TEXT,
+    severity_threshold TEXT NOT NULL DEFAULT 'HIGH',
+    confirmed INTEGER NOT NULL DEFAULT 0,
+    confirm_token TEXT NOT NULL,
+    unsubscribe_token TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

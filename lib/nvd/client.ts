@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { CVESummary, CVESeverity } from "@/types/cve";
+import { CVESummary, CVESeverity, VersionRange } from "@/types/cve";
 
 function getPrimaryMetric(metricList: any[]) {
   if (!metricList || !metricList.length) return null;
@@ -32,6 +32,31 @@ function getScore(metrics: any): number | null {
   if (v2) return v2.cvssData?.baseScore || null;
   
   return null;
+}
+
+function extractVersionRanges(cve: any): VersionRange[] {
+    const ranges: VersionRange[] = [];
+    if (!cve.configurations) return ranges;
+
+    cve.configurations.forEach((conf: any) => {
+        conf.nodes?.forEach((node: any) => {
+            node.cpeMatch?.forEach((match: any) => {
+                const parts = match.criteria.split(":");
+                const product = parts[4] || "unknown";
+                
+                // Only include if there is some versioning info or it's a vulnerable match
+                if (match.vulnerable) {
+                    ranges.push({
+                        product,
+                        versionStart: match.versionStartIncluding || match.versionStartExcluding || null,
+                        versionEnd: match.versionEndIncluding || match.versionEndExcluding || null,
+                        versionEndExcluding: !!match.versionEndExcluding
+                    });
+                }
+            });
+        });
+    });
+    return ranges;
 }
 
 const totalResultsCache = new Map<string, { total: number, time: number }>();
@@ -111,6 +136,7 @@ export async function fetchNvdCVEs(page = 1, resultsPerPage = 20, severity?: str
       cvssScore: getScore(cve.metrics),
       severity: getSeverity(cve.metrics),
       affectedProducts: Array.from(new Set(products)).slice(0, 3).filter(Boolean),
+      affectedVersionRanges: extractVersionRanges(cve),
       publishedDate: cve.published,
       lastModifiedDate: cve.lastModified,
       raw: cve,
@@ -158,6 +184,7 @@ export async function fetchSingleCVE(cveId: string): Promise<CVESummary | null> 
     cvssScore: getScore(cve.metrics),
     severity: getSeverity(cve.metrics),
     affectedProducts: Array.from(new Set(products)).slice(0, 3).filter(Boolean),
+    affectedVersionRanges: extractVersionRanges(cve),
     publishedDate: cve.published,
     lastModifiedDate: cve.lastModified,
     raw: cve,
