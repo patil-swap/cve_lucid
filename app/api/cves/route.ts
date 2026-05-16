@@ -1,3 +1,4 @@
+// TODO: REMOVE - Legacy NVD direct-fetch route. Use /api/search (SQLite) for consistent local-first data.
 import { NextResponse } from "next/server";
 import { fetchNvdCVEs } from "@/lib/nvd/client";
 

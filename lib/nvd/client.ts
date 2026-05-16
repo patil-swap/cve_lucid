@@ -77,6 +77,7 @@ async function getTotalResults(queryStr: string, headers: HeadersInit): Promise<
   return 0;
 }
 
+// TODO: REMOVE - Legacy heavyweight NVD wrapper. Prefer local SQLite lookups or fetchSingleCVE for detail fallbacks.
 export async function fetchNvdCVEs(page = 1, resultsPerPage = 20, severity?: string, keyword?: string) {
   const apiKey = process.env.NVD_API_KEY;
 

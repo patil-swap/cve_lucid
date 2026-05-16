@@ -13,14 +13,34 @@ export async function POST(request: Request) {
     const headers: HeadersInit = {};
     if (apiKey) headers['apiKey'] = apiKey;
 
-    // Fetch last 30 days of CVEs (approx)
-    // For simplicity, we'll fetch the most recent 2000 items as a baseline
-    console.log('Starting CVE ingestion via Cron...');
+    // Fetch last 90 days of CVEs to populate dashboard trends
+    const ninetyDaysAgo = new Date();
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
     
-    const url = `https://services.nvd.nist.gov/rest/json/cves/2.0?resultsPerPage=500`;
+    // Manual format to avoid any ISO string issues (YYYY-MM-DDTHH:mm:ss.SSS)
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const pubStartDate = `${ninetyDaysAgo.getFullYear()}-${pad(ninetyDaysAgo.getMonth() + 1)}-${pad(ninetyDaysAgo.getDate())}T00:00:00.000`;
+    
+    const now = new Date();
+    const pubEndDate = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}.000`;
+    
+    console.log(`Starting CVE ingestion from ${pubStartDate} to ${pubEndDate}...`);
+    
+    const params = new URLSearchParams({
+      pubStartDate: pubStartDate,
+      pubEndDate: pubEndDate,
+      resultsPerPage: '500'
+    });
+    
+    const url = `https://services.nvd.nist.gov/rest/json/cves/2.0?${params.toString()}`;
+    console.log(`Fetching from NVD: ${url}`);
     const res = await fetch(url, { headers });
     
-    if (!res.ok) throw new Error('NVD API failure during cron');
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error(`NVD API Error: ${res.status} ${res.statusText}`, errorText);
+      throw new Error(`NVD API failure during cron: ${res.status}`);
+    }
     
     const data = await res.json();
     const vulnerabilities = data.vulnerabilities || [];
@@ -65,8 +85,17 @@ export async function POST(request: Request) {
 
         // V3 Logic: Parse references for Patch/Exploit tags
         const refs = cve.references || [];
-        const hasPatch = refs.some((r: any) => r.tags?.includes('Patch') || r.tags?.includes('Vendor Advisory'));
-        const hasExploit = refs.some((r: any) => r.tags?.includes('Exploit'));
+        const hasPatch = refs.some((r: any) => 
+          r.tags?.includes('Patch') || 
+          r.tags?.includes('Vendor Advisory') ||
+          r.tags?.includes('Advisory') ||
+          r.tags?.includes('Third Party Advisory')
+        );
+        const hasExploit = refs.some((r: any) => 
+          r.tags?.includes('Exploit') ||
+          r.url?.toLowerCase().includes('exploit-db.com') ||
+          r.url?.toLowerCase().includes('github.com/rapid7/metasploit-framework')
+        );
         const isZeroDay = !hasPatch ? 1 : 0;
         const patchDate = hasPatch ? (cve.lastModified || cve.published) : null;
 
@@ -92,8 +121,12 @@ export async function POST(request: Request) {
 
     console.log(`Cron complete. Indexed ${count} CVEs.`);
     return NextResponse.json({ success: true, count });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Cron Ingestion Error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Internal Server Error', 
+      message: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    }, { status: 500 });
   }
 }
