@@ -1,17 +1,22 @@
 import { describe, it, expect, vi } from 'vitest';
 import { GET } from '@/app/api/search/route';
-import { db } from '@/lib/search';
+import { getDb } from '@/lib/search';
 
 // Mock the database for API tests
 vi.mock('@/lib/search', () => ({
-  db: {
-    prepare: vi.fn(() => ({
-      all: vi.fn(() => [
-        { id: 'CVE-2023-LIMIT', description: 'Test', cvssScore: 5.0, severity: 'MEDIUM' }
-      ]),
-      get: vi.fn(() => ({ total: 1 }))
-    }))
-  }
+  getDb: vi.fn(async () => ({
+    execute: vi.fn(async (params) => {
+      const sql = typeof params === 'string' ? params : params.sql;
+      if (sql.includes('COUNT(*)')) {
+        return { rows: [{ total: 1 }] };
+      }
+      return {
+        rows: [
+          { id: 'CVE-2023-LIMIT', description: 'Test', cvssScore: 5.0, severity: 'MEDIUM' }
+        ]
+      };
+    })
+  }))
 }));
 
 describe('Search API Route', () => {

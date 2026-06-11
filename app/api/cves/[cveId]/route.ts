@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/search';
+import { getDb } from '@/lib/search';
 import { fetchNvdCVEs } from '@/lib/nvd/client';
 
 export async function GET(
@@ -13,8 +13,13 @@ export async function GET(
   }
 
   try {
+    const db = await getDb();
     // 1. Try local index first
-    const cve = db.prepare('SELECT * FROM cves WHERE id = ?').get(cveId);
+    const cveRes = await db.execute({
+      sql: 'SELECT * FROM cves WHERE id = ?',
+      args: [cveId]
+    });
+    const cve = cveRes.rows[0];
 
     if (cve) {
       return NextResponse.json(cve);

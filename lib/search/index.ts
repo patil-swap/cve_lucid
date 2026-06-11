@@ -1,17 +1,22 @@
-import Database from 'better-sqlite3';
-import path from 'path';
+// lib/search/index.ts
+import { createClient } from '@libsql/client';
 import fs from 'fs';
+import path from 'path';
 
-// Initialize embedded db
-const dbPath = path.resolve(process.cwd(), 'cves.sqlite');
-const db = new Database(dbPath);
-db.pragma('journal_mode = WAL');
+const client = createClient({
+    url: process.env.TURSO_DATABASE_URL || 'file:cves.sqlite',
+    authToken: process.env.TURSO_AUTH_TOKEN,
+});
 
-// Ensure schema is created seamlessly checking file bindings
+// We'll export an async function that returns the client once the schema is applied
+let initialized = false;
 const schemaPath = path.resolve(process.cwd(), 'lib/search/schema.sql');
-const schema = fs.readFileSync(schemaPath, 'utf8');
 
-// better-sqlite3 allows executing multiple statements safely
-db.exec(schema);
-
-export { db };
+export async function getDb() {
+    if (!initialized) {
+        const schema = fs.readFileSync(schemaPath, 'utf8');
+        await client.executeMultiple(schema);
+        initialized = true;
+    }
+    return client;
+}

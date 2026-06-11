@@ -1,4 +1,4 @@
-import { db } from '../search';
+import { getDb } from '../search';
 import { randomUUID } from 'crypto';
 
 export interface AlertSubscription {
@@ -12,9 +12,14 @@ export interface AlertSubscription {
   createdAt: string;
 }
 
-export function createSubscription(email: string, product: string | null, severityThreshold: string) {
-  const existing = db.prepare('SELECT id FROM alert_subscriptions WHERE email = ? AND (product = ? OR (product IS NULL AND ? IS NULL))')
-    .get(email, product || null, product || null);
+export async function createSubscription(email: string, product: string | null, severityThreshold: string) {
+  const db = await getDb();
+  const existingRes = await db.execute({
+    sql: 'SELECT id FROM alert_subscriptions WHERE email = ? AND (product = ? OR (product IS NULL AND ? IS NULL))',
+    args: [email, product || null, product || null]
+  });
+
+  const existing = existingRes.rows[0];
 
   if (existing) {
     throw new Error('Already subscribed to this product alerts.');
@@ -24,24 +29,37 @@ export function createSubscription(email: string, product: string | null, severi
   const confirmToken = randomUUID();
   const unsubscribeToken = randomUUID();
 
-  db.prepare(`
-    INSERT INTO alert_subscriptions (id, email, product, severity_threshold, confirm_token, unsubscribe_token)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `).run(id, email, product || null, severityThreshold, confirmToken, unsubscribeToken);
+  await db.execute({
+    sql: `
+      INSERT INTO alert_subscriptions (id, email, product, severity_threshold, confirm_token, unsubscribe_token)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `,
+    args: [id, email, product || null, severityThreshold, confirmToken, unsubscribeToken]
+  });
 
   return { id, confirmToken, unsubscribeToken };
 }
 
-export function confirmSubscription(token: string) {
-  const result = db.prepare('UPDATE alert_subscriptions SET confirmed = 1 WHERE confirm_token = ?').run(token);
-  return result.changes > 0;
+export async function confirmSubscription(token: string) {
+  const db = await getDb();
+  const result = await db.execute({
+    sql: 'UPDATE alert_subscriptions SET confirmed = 1 WHERE confirm_token = ?',
+    args: [token]
+  });
+  return result.rowsAffected > 0;
 }
 
-export function unsubscribe(token: string) {
-  const result = db.prepare('DELETE FROM alert_subscriptions WHERE unsubscribe_token = ?').run(token);
-  return result.changes > 0;
+export async function unsubscribe(token: string) {
+  const db = await getDb();
+  const result = await db.execute({
+    sql: 'DELETE FROM alert_subscriptions WHERE unsubscribe_token = ?',
+    args: [token]
+  });
+  return result.rowsAffected > 0;
 }
 
-export function getConfirmedSubscriptions() {
-  return db.prepare('SELECT * FROM alert_subscriptions WHERE confirmed = 1').all() as any[];
+export async function getConfirmedSubscriptions() {
+  const db = await getDb();
+  const res = await db.execute('SELECT * FROM alert_subscriptions WHERE confirmed = 1');
+  return res.rows as any[];
 }

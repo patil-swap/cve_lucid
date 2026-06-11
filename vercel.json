@@ -1,0 +1,6 @@
+{
+  "crons": [
+    { "path": "/api/cron/index-cves", "schedule": "0 2 * * *" },
+    { "path": "/api/cron/send-alerts", "schedule": "0 8 * * *" }
+  ]
+}

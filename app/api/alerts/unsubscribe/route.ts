@@ -9,7 +9,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Missing token" }, { status: 400 });
   }
 
-  const success = unsubscribe(token);
+  const success = await unsubscribe(token);
 
   if (!success) {
     return NextResponse.json({ error: "Invalid unsubscription token." }, { status: 400 });

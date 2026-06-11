@@ -9,7 +9,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Missing token" }, { status: 400 });
   }
 
-  const confirmed = confirmSubscription(token);
+  const confirmed = await confirmSubscription(token);
 
   if (!confirmed) {
     return NextResponse.json({ error: "Invalid or expired confirmation token." }, { status: 400 });

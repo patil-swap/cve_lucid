@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/search';
+import { getDb } from '@/lib/search';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -9,8 +9,13 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Missing cveId" }, { status: 400 });
   }
 
+  const db = await getDb();
   // 1. Get current CVE details to find target product/CWE
-  const target = db.prepare('SELECT * FROM cves WHERE id = ?').get(cveId) as any;
+  const targetRes = await db.execute({
+     sql: 'SELECT * FROM cves WHERE id = ?',
+     args: [cveId]
+  });
+  const target = targetRes.rows[0] as any;
   if (!target) {
      return NextResponse.json({ similar: [] });
   }
@@ -34,7 +39,11 @@ export async function GET(request: Request) {
   }
 
   try {
-      const results = db.prepare(query).all(...params);
+      const resultsRes = await db.execute({
+         sql: query,
+         args: params
+      });
+      const results = resultsRes.rows;
       return NextResponse.json({ similar: results });
   } catch (err) {
       console.error(err);

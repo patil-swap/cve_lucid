@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/search';
+import { getDb } from '@/lib/search';
 
 export async function GET() {
   try {
+    const db = await getDb();
+
     // 1. Velocity Trend (Last 30 days)
-    const velocity = db.prepare(`
+    const velocityRes = await db.execute(`
         SELECT 
             date(publishedDate) as date,
             COUNT(CASE WHEN severity = 'CRITICAL' THEN 1 END) as critical,
@@ -14,18 +16,20 @@ export async function GET() {
         WHERE publishedDate >= date('now', '-30 days')
         GROUP BY 1 
         ORDER BY 1 ASC
-    `).all();
+    `);
+    const velocity = velocityRes.rows;
 
     // 2. Top Vendors / Products (Simple extraction from comma separated string)
     // In a real app we'd have a separate junction table, for now we pull first product
-    const topProductsRaw = db.prepare(`
+    const topProductsRawRes = await db.execute(`
         SELECT affectedProducts, COUNT(*) as count 
         FROM cves 
         WHERE affectedProducts != ''
         GROUP BY affectedProducts 
         ORDER BY count DESC 
         LIMIT 10
-    `).all();
+    `);
+    const topProductsRaw = topProductsRawRes.rows;
 
     const topVendors = topProductsRaw.map((p: any) => ({
         vendor: p.affectedProducts.split(',')[0].trim(),
@@ -33,17 +37,18 @@ export async function GET() {
     }));
 
     // 3. CWE Distribution
-    const cweDistribution = db.prepare(`
+    const cweDistributionRes = await db.execute(`
         SELECT cwe, COUNT(*) as count 
         FROM cves 
         WHERE cwe != ''
         GROUP BY cwe 
         ORDER BY count DESC 
         LIMIT 5
-    `).all();
+    `);
+    const cweDistribution = cweDistributionRes.rows;
 
     // 4. Exploit Availability Trend (Last 90 days)
-    const exploitTrend = db.prepare(`
+    const exploitTrendRes = await db.execute(`
         SELECT 
             date(publishedDate) as date,
             COUNT(CASE WHEN exploitExists = 1 THEN 1 END) as publicExploit,
@@ -52,18 +57,20 @@ export async function GET() {
         WHERE publishedDate >= date('now', '-90 days')
         GROUP BY 1 
         ORDER BY 1 ASC
-    `).all();
+    `);
+    const exploitTrend = exploitTrendRes.rows;
 
     // 5. Patch Velocity (Median days from disclosure to patch)
     // SQLite doesn't have a MEDIAN function, we'll do an average of days for simplicity or a subquery
-    const patchVelocityRaw = db.prepare(`
+    const patchVelocityRawRes = await db.execute(`
         SELECT 
             AVG(julianday(patchDate) - julianday(publishedDate)) as avgDays,
             severity
         FROM cves 
         WHERE patchAvailable = 1 AND patchDate IS NOT NULL
         GROUP BY severity
-    `).all();
+    `);
+    const patchVelocityRaw = patchVelocityRawRes.rows;
 
     const patchVelocity = {
         medianDays: Math.round(patchVelocityRaw.reduce((acc: number, curr: any) => acc + curr.avgDays, 0) / (patchVelocityRaw.length || 1)),
@@ -74,26 +81,29 @@ export async function GET() {
     };
 
     // 6. Zero-Day Intelligence
-    const zeroDayCount = db.prepare(`
+    const zeroDayCountRes = await db.execute(`
         SELECT COUNT(*) as count 
         FROM cves 
         WHERE isZeroDay = 1
-    `).get() as any;
+    `);
+    const zeroDayCount = zeroDayCountRes.rows[0] as any;
 
-    const weaponizedCount = db.prepare(`
+    const weaponizedCountRes = await db.execute(`
         SELECT COUNT(*) as count 
         FROM cves 
         WHERE exploitExists = 1
-    `).get() as any;
+    `);
+    const weaponizedCount = weaponizedCountRes.rows[0] as any;
 
     // 7. Totals
-    const totals = db.prepare(`
+    const totalsRes = await db.execute(`
         SELECT 
             COUNT(*) as total,
             COUNT(CASE WHEN severity = 'CRITICAL' THEN 1 END) as critical,
             COUNT(CASE WHEN severity = 'HIGH' THEN 1 END) as high
         FROM cves
-    `).get() as any;
+    `);
+    const totals = totalsRes.rows[0] as any;
 
     return NextResponse.json({
         velocity,

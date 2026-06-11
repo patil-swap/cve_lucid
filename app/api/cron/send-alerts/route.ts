@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getConfirmedSubscriptions } from "@/lib/alerts/subscriptions";
-import { db } from "@/lib/search";
+import { getDb } from "@/lib/search";
 import { sendAlertEmail } from "@/lib/email/sender";
 
 const EMAIL_LIMIT = 500;
@@ -13,8 +13,9 @@ export async function POST(request: Request) {
   }
 
   try {
+    const db = await getDb();
     // 2. Fetch all confirmed subscriptions
-    const subscriptions = getConfirmedSubscriptions();
+    const subscriptions = await getConfirmedSubscriptions();
     if (subscriptions.length === 0) {
       return NextResponse.json({ message: "No active subscriptions found." });
     }
@@ -60,7 +61,11 @@ export async function POST(request: Request) {
          params.push(severity);
       }
 
-      const matchingCves = db.prepare(query).all(...params) as any[];
+      const matchingCvesRes = await db.execute({
+        sql: query,
+        args: params
+      });
+      const matchingCves = matchingCvesRes.rows as any[];
 
       if (matchingCves.length > 0) {
         for (const { email, unsubscribeToken } of emails) {

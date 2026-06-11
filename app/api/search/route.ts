@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/search';
+import { getDb } from '@/lib/search';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -14,6 +14,7 @@ export async function GET(request: Request) {
   }
 
   try {
+     const db = await getDb();
      let query = `
        SELECT c.*, f.rank 
        FROM cves c
@@ -39,14 +40,22 @@ export async function GET(request: Request) {
      query += ' ORDER BY c.publishedDate DESC LIMIT ? OFFSET ?';
      params.push(limit, offset);
 
-     const results = db.prepare(query).all(...params);
+     const resultsRes = await db.execute({
+        sql: query,
+        args: params
+     });
+     const results = resultsRes.rows;
      
      // Get total count for pagination
      let countQuery = 'SELECT COUNT(*) as total FROM cves c';
      if (whereClauses.length > 0) {
         countQuery += ' JOIN cves_fts f ON c.id = f.id WHERE ' + whereClauses.join(' AND ');
      }
-     const total = (db.prepare(countQuery).get(...(params.slice(0, -2))) as any).total;
+     const totalRes = await db.execute({
+        sql: countQuery,
+        args: params.slice(0, -2)
+     });
+     const total = (totalRes.rows[0] as any).total;
 
      return NextResponse.json({
         totalResults: total,

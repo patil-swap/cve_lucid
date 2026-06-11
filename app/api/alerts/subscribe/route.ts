@@ -25,7 +25,7 @@ export async function POST(request: Request) {
     // 4. Create subscription
     let sub;
     try {
-      sub = createSubscription(email, sanitizedProduct, severityThreshold);
+      sub = await createSubscription(email, sanitizedProduct, severityThreshold);
     } catch (err: any) {
       if (err.message.includes('Already subscribed')) {
           return NextResponse.json({ error: "You are already subscribed to these alerts." }, { status: 429 });
