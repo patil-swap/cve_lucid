@@ -18,7 +18,7 @@ function cleanJson(raw: string): string {
     // We look for a block that starts with { and ends with }
     const lastOpenBrace = cleaned.lastIndexOf('{');
     const lastCloseBrace = cleaned.lastIndexOf('}');
-    
+
     if (lastOpenBrace !== -1 && lastCloseBrace !== -1 && lastCloseBrace > lastOpenBrace) {
         const candidate = cleaned.substring(lastOpenBrace, lastCloseBrace + 1);
         try {
@@ -114,7 +114,7 @@ export async function explainCVE(cveId: string, rawData: any, role?: "engineer" 
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
-                    model: "llama-3.3-70b-versatile",
+                    model: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
                     messages: [
                         { role: "system", content: systemPrompt },
                         { role: "user", content: userPrompt }
@@ -124,7 +124,11 @@ export async function explainCVE(cveId: string, rawData: any, role?: "engineer" 
                 })
             });
 
-            if (!res.ok) throw new Error(`Groq API failed with status ${res.status}`);
+            if (!res.ok) {
+                const errBody = await res.json().catch(() => ({}));
+                console.error("Groq error response:", JSON.stringify(errBody));
+                throw new Error(`Groq API failed with status ${res.status}: ${errBody?.error?.message ?? "unknown error"}`);
+            }
             const output = await res.json();
             finalRawJson = output.choices[0].message.content;
 
@@ -166,7 +170,7 @@ export async function explainCVE(cveId: string, rawData: any, role?: "engineer" 
         if (role) {
             const impactResult = parsed.impactText || parsed.impact || parsed.text || parsed.explanation;
             if (!impactResult) throw new Error("Missing impactText in role generation");
-            
+
             const normalized = { impactText: impactResult };
             await setCache(cacheKey, JSON.stringify(normalized), 86400);
             return normalized;

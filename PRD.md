@@ -252,7 +252,7 @@ Ollama (local dev):
 - Not suitable for Vercel deployment (no persistent local process)
 
 Groq (Vercel / production):
-- Free tier: 14,400 requests/day, 6,000 tokens/min on llama-3.3-70b-versatile
+- Free tier: 14,400 requests/day, 6,000 tokens/min on qwen/qwen3-32b
 - Requires GROQ_API_KEY in Vercel env vars
 - Response times typically under 1 second — fast enough for modal load
 - Falls back gracefully if rate limit hit: show raw NVD description, surface a warning in the UI
