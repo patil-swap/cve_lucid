@@ -16,8 +16,6 @@ export async function POST(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const roleParam = searchParams.get("role");
-    
-    // Ensure role parameter matches the specific strict ENUM allowed by Prompts layer
     const role = (roleParam === "engineer" || roleParam === "manager" || roleParam === "executive") ? roleParam : undefined;
 
     const body = await request.json();
@@ -28,10 +26,26 @@ export async function POST(request: Request) {
     }
 
     const explanation = await explainCVE(cveId, rawNvdData, role);
+
+    // If the response has a _fallback flag, return 503
+    if (explanation && typeof explanation === 'object' && explanation._fallback === true) {
+      const { _fallback, _reason, ...fallbackData } = explanation; // Remove internal flags
+      return NextResponse.json(
+        {
+          error: "AI translation service temporarily unavailable. Please try again later.",
+          fallback: fallbackData
+        },
+        { status: 503 } // Service Unavailable
+      );
+    }
+
     return NextResponse.json(explanation);
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : String(error);
     console.error("AI Explanation Error:", msg);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }
