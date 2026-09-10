@@ -14,6 +14,14 @@ V3.0 introduces a master-detail workflow, proactive alerting, and real-time vers
 - **Full-Text Search:** Local SQLite FTS5 index for sub-50ms querying across thousands of vulnerabilities.
 - **Trend Dashboards:** Real-time visualization of vulnerability velocity, vendor distribution, and CWE categories via Recharts.
 
+## 🎬 Demo
+
+[![CVE Lucid Demo](https://img.youtube.com/vi/4btMf9l5_Cw/maxresdefault.jpg)](https://www.youtube.com/watch?v=4btMf9l5_Cw)
+
+*Watch the 90-second walkthrough — from raw CVE to a role-tailored explanation.*
+
+---
+
 ## Tech Stack
 - **Framework:** Next.js 14 (App Router)
 - **Database:** SQLite (better-sqlite3) with FTS5 for local indexing.
